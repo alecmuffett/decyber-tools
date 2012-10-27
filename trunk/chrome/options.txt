@@ -1,0 +1,12 @@
+Not using Chrome? See also the online / CGI version at [http://bit.ly/decyber]
+
+== version history ==
+
+
+* 0.6 - beta 2
+
+* 0.5 - beta 1
+
+* 0.3 - code cleanup
+
+* 0.1 - initial release
