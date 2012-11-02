@@ -1,0 +1,219 @@
+#!/usr/bin/perl -w
+use CGI qw/:standard/;
+
+$banner = <<'EOT';
+<p>
+<em>author:</em> <A HREF="http://dropsafe.crypticide.com/">alec muffett</A> <br/>
+<em>version:</em> 2.6 - 26 oct 2012 
+<br/>
+<em>short link:</em>
+<tt><A HREF="http://bit.ly/decyber">http://bit.ly/decyber</A></tt>
+<br/>
+<em>tools:</em>
+<A HREF="mailto:alec.muffett@gmail.com?subject=decyber"><button>e-mail author</button></A>
+<A HREF="http://dropsafe.crypticide.com/article/8907"><button>comments and feedback</button></a>
+<br/>
+<em>bookmarklet:</em>
+<A HREF="javascript:var%20d=document,w=window,e=w.getSelection,k=d.getSelection,x=d.selection,s=(e?e():(k)?k():(x?x.createRange().text:0)),f='http://www.crypticide.com/cgi-bin/decyber',l=d.location,e=encodeURIComponent,u=f+'?input='+e(s);a=function(){if(!w.open(u,'t','toolbar=0,resizable=1,scrollbars=1,status=1,width=720,height=580'))l.href=u;};if(/Firefox/.test(navigator.userAgent))setTimeout(a,0);else%20a();void(0)"><button>decyber!</button></A> - drag this into your bookmarks bar!
+</p>
+
+
+EOT
+
+$advert = <<'EOT';
+New: <A HREF="https://chrome.google.com/webstore/detail/decyber/booeoieajdmnmigjekgjgojfogkcchbn/details"><button>Google Chrome Extension!</button></A> - same output, but edited in-place on the page!
+EOT
+
+##################################################################
+
+$sample_text = <<'EOT';
+Source: http://goo.gl/LT3ET
+
+President Obama has declared that the "cyber threat is one of the most serious economic and national security challenges we face as a nation" and that "America's economic prosperity in the 21st century will depend on cybersecurity."
+
+As a result, the President directed a top-to-bottom review of the Federal Government's efforts to defend our information and communications infrastructure, which resulted in a report titled the Cyberspace Policy Review.   To implement the results of this review, the President has appointed Howard Schmidt to serve at the U.S. Cybersecurity Coordinator and created the Cybersecurity Office within the National Security Staff, which works closely with the Federal Chief Information Officer Steven VanRoekel, the Federal Chief Technology Officer Todd Park, and the National Economic Council.
+
+Why This is Important
+
+Cyberspace touches nearly every part of our daily lives.  It's the broadband networks beneath us and the wireless signals around us, the local networks in our schools and hospitals and businesses, and the massive grids that power our nation.  It's the classified military and intelligence networks that keep us safe, and the World Wide Web that has made us more interconnected than at any time in human history.  We must secure our cyberspace to ensure that we can continue to grow the nation's economy and protect our way of life.
+
+What We Must Do
+
+Our Nation's cybersecurity strategy is twofold:  (1) improve our resilience to cyber incidents and (2) reduce the cyber threat.
+
+Improving our cyber resilience includes:  hardening our digital infrastructure to be more resistant to penetration and disruption; improving our ability to defend against sophisticated and agile cyber threats; and recovering quickly from cyber incidents-whether caused by malicious activity, accident, or natural disaster.
+
+Where possible, we must also reduce cyber threats.   We seek to reduce threats by working with allies on international norms of acceptable behavior in cyberspace, strengthening law enforcement capabilities against cybercrime, and deterring potential adversaries from taking advantage of our remaining vulnerabilities.
+
+Underlying all of these efforts is the need to acquire the best possible information about the state of our networks and the capabilities and intentions of our cyber adversaries.  We must also make critical cybersecurity information available to and usable by everyone who needs it, including network operators and defenders, law enforcement and intelligence agencies, and emergency management officials in the Federal, State, local, and tribal governments, private industry, and allied governments.
+
+As we take all these actions to secure our networks, we will do so in a manner that preserves and enhances our personal privacy and enables the exercise of our civil liberties and fundamental freedoms.  In the 21st Century, our digital networks are essential to our way of life around the world and are an engine for freedom.  We will lead by example in order to demonstrate that increased security, enhanced user privacy and keeping the Internet open and innovative go hand-in-hand.
+
+Near Term Actions
+
+The President's Cyberspace Policy Review identifies 10 near term actions to support our cybersecurity strategy:
+
+Appoint a cybersecurity policy official responsible for coordinating the Nation's cybersecurity policies and activities.
+
+Prepare for the President's approval an updated national strategy to secure the information and communications infrastructure.
+
+Designate cybersecurity as one of the President's key management priorities and establish performance metrics
+
+Designate a privacy and civil liberties official to the NSC cybersecurity directorate.
+
+Conduct interagency-cleared legal analyses of priority cybersecurity-related issues.
+
+Initiate a national awareness and education campaign to promote cybersecurity.
+
+Develop an international cybersecurity policy framework and strengthen our international partnerships.
+
+Prepare a cybersecurity incident response plan and initiate a dialog to enhance public-private partnerships.
+
+Develop a framework for research and development strategies that focus on game-changing technologies that have the potential to enhance the security, reliability, resilience, and trustworthiness of digital infrastructure.
+
+Build a cybersecurity-based identity management vision and strategy, leveraging privacy-enhancing technologies for the Nation.
+EOT
+
+##################################################################
+
+print header('text/html');
+print start_html('decyber: taking the fear out of cybersecurity');
+print h2('decyber: taking the fear out of cybersecurity');
+
+print $banner;
+print p($advert) unless (param('input'));
+
+print start_form();
+print textarea(-name=>'input',
+               -id=>'idinput',
+	       -default=>$sample_text,
+	       -rows=>16,
+	       -columns=>80);
+
+$clear = <<'EOT';
+<script type = "text/javascript">
+function clearText() {document.getElementById("idinput").value = "";}
+</script>
+<button onClick="clearText()">Clear</button>
+EOT
+
+print p(checkbox('markup', 0, 1, 'show changes?'));
+print p($clear, submit());
+print end_form();
+
+print "\n\n<!-- text follows -->\n";
+
+if (param('markup')) {
+    $prex = '<strong>';
+    $sufx = '</strong>';
+    $blank = '****';
+}
+else {
+    $prex = '';
+    $sufx = '';
+    $blank = '';
+}
+
+@patterns = ();
+@replacements = ();
+
+while (<DATA>) {
+    chomp;
+    s!\s+! !go;
+    ($how, $pattern, $replacement) = split(" ", $_, 3);
+    next if ($pattern eq "");
+    if ($how eq "i") {
+	push(@patterns, qr/$pattern/i); # case independent
+    }
+    else {
+	push(@patterns, qr/$pattern/); # case dependent
+    }
+    push(@replacements, ($replacement || $blank));
+}
+
+if ($input = param('input')) {
+    @lines = split(/\r?\n/o, $input);
+    foreach $line (@lines) {
+	# basic escape
+	$line =~ s!&!&amp;!go;
+	$line =~ s!<!&lt;!go;
+	$line =~ s!>!&gt;!go;
+
+	# broken unicode
+	$line =~ s!\xc3\x82! !go; # caret-A
+	$line =~ s!\xc2\xa0! !go; # utf8-space
+	$line =~ s!\xc2\xa3!&pound;!go;
+	$line =~ s!\xc2\xae!(R)!go;
+	$line =~ s!\xc2\xa9!(C)!go;
+
+	# merge spaces
+	$line =~ s!\s+! !go;
+
+	# remap
+	$line =~ s!\xe2\x80\x94!-!go;
+	$line =~ s!\xe2\x80\x98!'!go;
+	$line =~ s!\xe2\x80\x99!'!go;
+	$line =~ s!\xe2\x80\x9c!"!go;
+	$line =~ s!\xe2\x80\x9d!"!go;
+	$line =~ s!\xe2\x80\xa2!*!go;
+
+
+	for ($i = 0; $i <= $#patterns; $i++) {
+	    $pattern = $patterns[$i];
+	    $replacement = $replacements[$i];
+	    #print "$i s!$pattern!$replacement!";
+	    $line =~ s!$pattern!$prex$replacement$sufx!g;
+	}
+
+	print p($line);
+    }
+    print p(em("Processed by <A HREF=\"http://bit.ly/decyber\">http://bit.ly/decyber</A>"));
+}
+
+# KEEP BLANK LINE
+print <<'EOT';
+
+<!-- end -->
+<script type="text/javascript">
+
+    var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-904415-6']);
+_gaq.push(['_trackPageview']);
+
+(function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+EOT
+
+print end_html();
+
+# REMEMBER TO RUN THE PATTERNS THRU "sort -k 2 -r -f"
+__END__;
+. \bAPT\b malicious hackers
+. \bAnonymous\bSomeone
+. \bCyber.?[Ss]ecurity\b Internet Security
+. \bCyber.?space\b The internet
+
+i \bzero.?day.vulnerability\b brand new bug
+i \btrusted\b reasonably trustworthy
+i \bsurfing\b browsing
+i \bskimming\b fraud
+i \bsecure\scyberspace\b secure internet
+i \bintellectual.property\b documents
+i \bidentity.?theft\b fraud
+i \bidentity.?ecosystem\b id-card
+i \bcyber\sand\b?
+i \bcyber.?threat\b risk of being connected to the internet
+i \bcyber.?space\b the internet
+i \bcyber.?security\b internet security
+i \bcyber.?geddon\b disaster
+i \bcyber.?espionage\b espionage
+i \bcyber.?attacks\b illegal hacking
+i \bcyber-?
+i \badvanced.?persistent.?threats?\b malicious hackers
+i \b0.?day\b new bug
+i \b0.?days\b new bugs
